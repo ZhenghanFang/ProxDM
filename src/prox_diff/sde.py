@@ -37,6 +37,6 @@ class SDE:
 
     def alpha(self, t: float) -> float:
         """
-        alpha(t) = exp(-\int_0^t beta(s) ds)
+        alpha(t) = exp(-int_0^t beta(s) ds)
         """
         return np.exp(-self.beta_integral(0, t))

@@ -40,12 +40,14 @@ Download the models manually to `assets/pretrained_models/`, or run `scripts/dow
 ## Data Preparation
 
 #### Datasets
-You can download the required datasets using `torchvision` by running:
+* **Datasaurus Dozen**: Download the csv file from [here](https://www.openintro.org/data/index.php?data=datasaurus) to `data/datasaurus/datasaurus.csv`.
+
+* You can download the **MNIST** and **CIFAR-10** datasets using `torchvision` by running:
 ```
 python scripts/download_datasets.py
 ```
-* MNIST: stored in `data/mnist/`
-* CIFAR10: stored in `data/cifar10/`
+- **MNIST**: stored in `data/mnist/`
+- **CIFAR-10**: stored in `data/cifar10/`
 
 #### Reference statistics for FID
 Reference FID statistics for MNIST and CIFAR10 are available on [HuggingFace](https://huggingface.co/ZhenghanFang/prox-diffusion/tree/main).
@@ -54,7 +56,22 @@ Download the stats manually to `assets/fid_stats/{mnist,cifar10}.npz`, or run `s
 
 To self-compute reference stats, see `scripts/prepare_fid_stats.py`.
 
-## Training
+## Synthetic Example (Datasaurus "dino")
+
+This experiment evaluates score-based and proximal samplers on a 2D mixture of Dirac deltas (the `dino` dataset in Datasaurus), using exact score and proximals, and computes Wasserstein distances to the target distribution.
+
+1. Generate samples and compute Wasserstein distances:
+```bash
+python scripts/low_dim_experiment/sample.py
+```
+Results will be saved in `output/low_dim/dino/`.
+
+2. Run `scripts/low_dim_experiment/plot.ipynb` to produce the figures in the paper.
+
+
+## Experiments on MNIST and CIFAR-10
+
+### Training
 
 We provide commands to reproduce all ProxDM training experiments in the paper:
 ```sh
@@ -92,7 +109,7 @@ accelerate launch --multi_gpu --num_processes 4 train.py \
 ```
 
 
-## Evaluation (Compute FID)
+### Evaluation (Compute FID)
 
 We provide commands to reproduce all FID results in the paper:
 ```sh
