@@ -7,11 +7,14 @@ requires-python = ">=3.12"
 dependencies = [
     "absl-py>=2.3.1",
     "accelerate>=1.8.1",
+    "diffusers>=0.34.0",
     "einops>=0.8.1",
     "imageio>=2.37.0",
     "ipykernel>=6.29.5",
+    "kaggle>=1.7.4.5",
     "matplotlib>=3.10.3",
     "ml-collections>=1.1.0",
+    "nbstripout>=0.8.1",
     "omegaconf>=2.3.0",
     "pandas>=2.3.0",
     "pillow>=11.3.0",
@@ -19,6 +22,7 @@ dependencies = [
     "pytorch-fid>=0.3.0",
     "scienceplots>=2.1.1",
     "torch>=2.7.1",
+    "torch-fidelity @ git+https://github.com/toshas/torch-fidelity.git@acc34a61646db966434d3c3f9c0c773e3dd7bad9",
     "torchvision>=0.22.1",
     "tqdm>=4.67.1",
 ]

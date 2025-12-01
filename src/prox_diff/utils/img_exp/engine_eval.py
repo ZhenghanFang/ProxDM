@@ -11,6 +11,7 @@ from ...core import ProxModel, ProxSamplerVP, ScoreModel, ScoreSamplerVP
 from .fid_core import sample_and_compute_fid
 from .networks.ddpm_unet.model import UNetTime
 from .networks.ddpm_unet.model_prox import get_network
+from .vae import get_vae
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +68,12 @@ def compute_fid_for_ckpt(
                 continue
 
             logger.info(f"{save_dir=}")
-            _, sampler = build_model_and_sampler(config, ckpt_path, state_dict_key)
+            _, sampler, vae = build_model_and_sampler(config, ckpt_path, state_dict_key)
             sampler.sample_method = sample_method
             sampler.n_steps = n_steps
             sampler.to(device)
+            if vae:
+                vae.to(device)
 
             generator = torch.Generator(device).manual_seed(seed)
             fid = sample_and_compute_fid(
@@ -82,6 +85,7 @@ def compute_fid_for_ckpt(
                 device,
                 stat_npz,
                 config.fid.save_samples,
+                vae=vae,
             )
             logger.info(f"[FID] {save_dir} = {fid:.2f}")
 
@@ -127,6 +131,23 @@ def build_model_and_sampler(config, ckpt_path: str, state_dict_key: str):
     ckpt = torch.load(ckpt_path, map_location="cpu")
     sampler.model.load_state_dict(ckpt[state_dict_key])
 
+    ###########################################################################
+    # Initialize vae
+    ###########################################################################
+    vae = None
+    if config.get("model", {}).get("use_vae", False):
+        vae = get_vae()
+
+    if vae:
+        # VAE model uses latent shape
+        sampler.data_dim = config.model.vae_latent_shape
+    else:
+        sampler.data_dim = (channels, image_size, image_size)
+
+    ###########################################################################
+    # Convert to DataParallel and eval mode
+    ###########################################################################
     sampler.model = nn.DataParallel(sampler.model).eval()
     assert not (sampler.model.training or sampler.model.module.model.training)
-    return model, sampler
+
+    return model, sampler, vae

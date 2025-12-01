@@ -88,3 +88,17 @@ shutil.copy(
     os.path.join("assets/fid_stats/cifar10.npz"),
 )
 shutil.rmtree(png_folder)
+
+
+###############################################################################
+# Compute training data stat for FID on CelebA-HQ
+###############################################################################
+img_dir = "data/celeba_hq/celeba_hq_256"
+save_path = "assets/fid_stats/celeba_hq_256.npz"
+os.makedirs(os.path.dirname(save_path), exist_ok=True)
+save_fid_stats(
+    [img_dir, save_path],
+    batch_size=100,
+    device=device,
+    dims=2048,
+)

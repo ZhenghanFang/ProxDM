@@ -17,6 +17,13 @@ We introduce a new framework for diffusion models based on backward discretizati
   <em>ProxDM achieves lower FID with fewer steps.</em>
 </p>
 
+---
+
+## 🚀 Updates
+- **2025/12/01**: Added the CelebA-HQ (256x256) experiment, using a latent-space variant of ProxDM.
+
+---
+
 
 ## Environment
 Install the dependencies via conda:
@@ -39,22 +46,26 @@ Download the models manually to `assets/pretrained_models/`, or run `scripts/dow
 
 ## Data Preparation
 
-#### Datasets
-* **Datasaurus Dozen**: Download the csv file from [here](https://www.openintro.org/data/index.php?data=datasaurus) to `data/datasaurus/datasaurus.csv`.
+### 1. Toy 2D dataset: Datasaurus Dozen
+Download the csv file from [here](https://www.openintro.org/data/index.php?data=datasaurus) to `data/datasaurus/datasaurus.csv`.
 
-* You can download the **MNIST** and **CIFAR-10** datasets using `torchvision` by running:
+### 2. Standard benchmarks: MNIST and CIFAR-10
+You can download the datasets using `torchvision` by running:
 ```
 python scripts/download_datasets.py
 ```
 - **MNIST**: stored in `data/mnist/`
 - **CIFAR-10**: stored in `data/cifar10/`
 
-#### Reference statistics for FID
-Reference FID statistics for MNIST and CIFAR10 are available on [HuggingFace](https://huggingface.co/ZhenghanFang/prox-diffusion/tree/main).
+### 3. High-resolution dataset: CelebA-HQ (256x256)
+Download from Kaggle - see: `scripts/download_celeba_hq_256.sh`.
 
-Download the stats manually to `assets/fid_stats/{mnist,cifar10}.npz`, or run `scripts/download_models_and_fid_stats.sh`.
+### 4. Reference statistics for FID
+Reference FID statistics for MNIST, CIFAR10 and CelebA-HQ are available on [HuggingFace](https://huggingface.co/ZhenghanFang/prox-diffusion/tree/main).
 
-To self-compute reference stats, see `scripts/prepare_fid_stats.py`.
+Download the stat files manually to `assets/fid_stats/`, or run `scripts/download_models_and_fid_stats.sh`.
+
+To self-compute reference stats, see: `scripts/prepare_fid_stats.py`.
 
 ## Synthetic Example (Datasaurus "dino")
 
@@ -106,6 +117,16 @@ accelerate launch --multi_gpu --num_processes 4 train.py \
 # CIFAR10 Prox Hybrid (5, 10, 20 steps, No heur.)
 accelerate launch --multi_gpu --num_processes 4 train.py \
 --config configs/cifar10/prox_hybrid_subset_noheur.py --ckpt_dir output/train/cifar10/prox_hybrid_subset_noheur \
+
+# CelebA-HQ Score (latent space)
+accelerate launch --multi_gpu --num_processes 8 \
+train.py --config configs/celeba_hq_vae/score.py \
+--ckpt_dir output/train/celeba_hq/score
+
+# CelebA-HQ Prox Hybrid (latent space)
+accelerate launch --multi_gpu --num_processes 8 \
+train.py --config configs/celeba_hq_vae/prox_hybrid.py \
+--ckpt_dir output/train/celeba_hq/prox_hybrid
 ```
 
 
@@ -188,6 +209,25 @@ python eval.py \
 --ckpt_path assets/pretrained_models/cifar10_prox_hybrid_subset_noheur.pth --output_root output/eval \
 --config.fid.n_samples 50000 --config.fid.batch_size $BATCH_SIZE \
 --config.fid.steps "(5,10,20)" \
+
+# CelebA-HQ Score SDE
+python eval.py \
+--config configs/celeba_hq_vae/score.py \
+--ckpt_path assets/pretrained_models/celeba_hq_score.pth --output_root output/eval \
+--config.fid.n_samples 30000
+
+# CelebA-HQ Score ODE
+python eval.py \
+--config configs/celeba_hq_vae/score.py \
+--ckpt_path assets/pretrained_models/celeba_hq_score.pth --output_root output/eval \
+--config.fid.n_samples 30000 \
+--config.fid.sample_method ode_euler_eps
+
+# CelebA-HQ Prox Hybrid
+python eval.py \
+--config configs/celeba_hq_vae/prox_hybrid.py \
+--ckpt_path assets/pretrained_models/celeba_hq_prox_hybrid.pth --output_root output/eval \
+--config.fid.n_samples 30000
 ```
 
 

@@ -17,6 +17,7 @@ from .networks.ddpm_unet.model_prox import get_network
 from .t_lamb_sampling import get_sample_t_lamb_func
 from .t_sampling import get_sample_t_func
 from .utils import ema, save_ckpt
+from .vae import get_vae
 
 
 def save_config_as_json(config, path: str):
@@ -65,11 +66,15 @@ def train(config, ckpt_dir: str, debug: bool = False):
     ###########################################################################
     # Build model, trainer, etc.
     ###########################################################################
-    model, trainer, loss_lr_schedule = build_model_trainer_schedule(config)
+    model, trainer, loss_lr_schedule, vae = build_model_trainer_schedule(config)
     # print number of model parameters
     accelerator.print(
-        f"Number of model parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}"
+        f"Number of parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}"
     )
+    if vae:
+        accelerator.print(
+            f"Number of VAE parameters: {sum(p.numel() for p in vae.parameters()):,}"
+        )
 
     optimizer = torch.optim.AdamW(model.parameters())
     ema_models = {decay: copy.deepcopy(model) for decay in ema_decay}
@@ -98,13 +103,17 @@ def train(config, ckpt_dir: str, debug: bool = False):
     trainer, optimizer, loader = accelerator.prepare(trainer, optimizer, loader)
     for decay, ema_model in ema_models.items():
         ema_models[decay].to(device)
+    if vae:
+        vae.to(device)
 
     def train_step(loss_params):
         model.train()
         x0 = next(loader)
+        if vae:
+            x0 = vae.encode(x0)
         optimizer.zero_grad()
         loss = trainer(x0, loss_params).mean()
-        accelerator.backward(loss)  # <-- replaces loss.backward()
+        accelerator.backward(loss)
 
         if grad_clip is not None:
             norm = accelerator.clip_grad_norm_(model.parameters(), grad_clip)
@@ -229,4 +238,11 @@ def build_model_trainer_schedule(config):
     else:
         raise ValueError(f"Unknown model class: {model_class}")
 
-    return model, trainer, loss_lr_schedule
+    ###########################################################################
+    # Initialize vae
+    ###########################################################################
+    vae = None
+    if config.get("model", {}).get("use_vae", False):
+        vae = get_vae()
+
+    return model, trainer, loss_lr_schedule, vae
